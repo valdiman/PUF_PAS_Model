@@ -66,6 +66,10 @@ PUF_PAS_Effective_Volume_ModelMERRA.R
 
 PUF_PAS_Effective_Volume_ModelVFinal.R
 
-There is no need to link the data in these scripts, it is already incorporated it.
+There is no need to link the data in these scripts, it is already incorporated it. After running any of the meteorological scripts, new forders will be created
+in the Output/Data folder, i.e., isd_light and MERRA. Similarly, after running any of the PUF_PAS scripts, a new folder will be created in the Output/Data/Results,
+isd_light and MERRA too.
+
+
 
 
