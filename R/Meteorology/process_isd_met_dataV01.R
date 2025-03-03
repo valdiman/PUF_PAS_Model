@@ -17,7 +17,7 @@ install.packages('R.utils')
 # metDataID or Station ID can be found @ https://www.ncei.noaa.gov/maps/global-summaries/
 # Open the Map:
 # Make sure the map is loaded and centered on the region of interest.
-# Enable the Station Layer: On the top left corner, there's a "Layer" button.
+# Enable the Station Layer: On the top left corner, there's a "Layer" button (wrench).
 # Click on this to open the layer settings. Ensure that "GHCN
 # (Global Historical Climatology Network)
 # Stations" or "Global Summary of the Day (GSOD) Stations" is enabled.
@@ -25,9 +25,8 @@ install.packages('R.utils')
 # the Area of Interest:
 # Use the zoom tool or scroll to zoom into the area where you want to find
 # weather stations. You will see station markers appearing on the map as you
-# zoom in. Click on a Station Marker:
-# Once you've zoomed in and the station markers are visible, click on one
-# of the station markers. This will bring up a pop-up window with detailed
+# zoom in. Click on the Identity ("I") on the Station Marker:
+# This will bring the info on the left panel, i.e., name of the station, period of record and Station ID
 # station information. 
 # Station ID: XXXXXXXXXXX need to add "-" after the sixth digit.
 metdataID <- "725340-14819"  # Example ID 725300-94846 O'Hare Chicago
@@ -38,8 +37,8 @@ num_years <- 3               # Number of years to include (start_year + 1)
 # Generate a sequence of years
 years <- start_year:(start_year + num_years - 1)
 
-# Create a directory for output
-output_dir <- file.path("Output/Data/isd_light", metdataID)
+# Create a directory for output storage
+output_dir <- file.path("Output/Data/isd_light", metdataID) # the name of the file will be metdataID (Station)
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
@@ -161,7 +160,7 @@ filled_data <- filled_data %>% select(-TD)
 
 # Save the final filled data without 'TD'
 output_file_path <- file.path(output_dir,
-                              paste0(metdataID, "-", start_year, "-",
+                              paste0(metdataID, "-", start_year, "-", # the year is included  here
                                      num_years, "-filled.csv"))
 tryCatch({
   write.csv(filled_data, file = output_file_path, row.names = FALSE)
