@@ -19,7 +19,7 @@ ORCID: 0000-0002-0572-1494
 
 This README file was generated on March 10, 2025 by Andres Martinez.
 
-This work was supported by the National Institutes of Environmental Health Sciences (NIEHS) grant #P42ES013661.  The funding sponsor did not have any role in study design; in collection, analysis, and/or interpretation of data; in creation of the dataset; and/or in the decision to submit this data for publication or deposit it in a repository.
+This work was supported by the National Institutes of Environmental Health Sciences (NIEHS) grant #P42ES013661.
 
 This README file describes the codes generated to predict the sampling rates and effective volumes of airborne PCBs for a PUF-PAS sampler
 
@@ -50,16 +50,20 @@ This section of the ReadMe file provides short instructions on how to download a
 --------
 R FILES AND STRUCTURE
 --------
-It is recommended to create a project in R (e.g., PUF-PAS.Rproj). Download the project file (.Rproj) and the R subfolder R where the codes are located, and the Subfolder.R code. Run first the Subfolder.R code, which will generate all the subfolders. 
-The structure of this project includes an R subfolder where all the R codes are located. There is a Data subfolder where the physico-chemical properties of the individual PCB congeners are stored.data are storage, and then an Output subfolder, where the results are located.
+It is recommended to create a project in R (e.g., PUF-PAS.Rproj). Download the project file (.Rproj) and the R subfolders where the codes are located, and the Subfolder.R code. Run first the Subfolder.R code, which will generate all the subfolders. 
+The structure of this project includes an R subfolder where all the R codes are located. There is a Data subfolder where the physico-chemical properties of the individual PCB congeners are stored, and then an Output subfolder, where the results are located.
 The R subfolder is also subdivided into Meteorology and PufPasEffectiveVolume subfolders.
 
 The meteorological data are generated here:
+
 process_isd_met_dataV01.R
+
 process_MERRA_dataV01.R
 
 These generated data are used in the two scripts to generate the efective volumes:
+
 PUF_PAS_Effective_Volume_ModelMERRA.R
+
 PUF_PAS_Effective_Volume_ModelVFinal.R
 
 There is no need to link the data in these scripts, it is already incorporated it.
