@@ -1,6 +1,12 @@
+# Uses MERRA data generated from;
+# R/Meteorology/process_MERRA_dataV01.R
+# Need to select the dates of the PUF-PAS sampling
+
 
 # Calculations (functions) ------------------------------------------------
-PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data_path, pcb_properties_path, pcb_ppLFER_path, file_path) {
+PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date,
+                                                  met_data_path, pcb_properties_path,
+                                                  pcb_ppLFER_path, file_path) {
   
   # Specify the method for determining KPUF (1 or 2)
   KPUFMethod <- 1
@@ -149,7 +155,7 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
       ls <- -0.456
       lh <- -365.896
       
-      E <- Congener_ppLFER[2]  # Assuming correct index for descriptor
+      E <- Congener_ppLFER[2]
       S <- Congener_ppLFER[3]
       A <- Congener_ppLFER[4]
       B <- Congener_ppLFER[5]
@@ -216,12 +222,16 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
   formatted_end_date <- format(as.POSIXct(end_date), "%Y%m%d%H")
   
   rowID <- matrix(nrow = 2, ncol = 6)
-  rowID[1, ] <- c('1', formatted_start_date, formatted_end_date, as.character(Length), as.character(WS_Exceedence), 'Veff')
-  rowID[2, ] <- c('1', formatted_start_date, formatted_end_date, as.character(Length), as.character(WS_Exceedence), 'SR')
+  rowID[1, ] <- c('1', formatted_start_date, formatted_end_date,
+                  as.character(Length), as.character(WS_Exceedence), 'Veff')
+  rowID[2, ] <- c('1', formatted_start_date, formatted_end_date,
+                  as.character(Length), as.character(WS_Exceedence), 'SR')
   
   outData <- cbind(rowID, PAS_Final)
   
-  column_names <- c("PUF_ID", "Deployment", "Collection", "Length", "WS_Exceedence", "Type", PCB_Properties$Congener.s..ID)
+  column_names <- c("PUF_ID", "Deployment", "Collection", "Length",
+                    "WS_Exceedence", "Type", PCB_Properties$Congener.s..ID)
+  
   colnames(outData) <- column_names
   
   # Create the directory if it does not exist
