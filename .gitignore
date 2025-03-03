@@ -7,6 +7,9 @@
 !*.Rmd
 !*.Rproj
 
+# Allow all directories (since they're required for structure)
+!*/
+
 # RStudio-specific files
 .Rproj.user/
 .Rhistory
