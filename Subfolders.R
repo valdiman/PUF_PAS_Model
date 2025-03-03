@@ -1,5 +1,7 @@
 # Create subfolder within the current working directory
 dir.create("R")
+dir.create("R/Meteorology")
+dir.create("R/PufPasEffectiveVolume")
 dir.create("Data")
 dir.create("Output")
 dir.create("Output/Data")
