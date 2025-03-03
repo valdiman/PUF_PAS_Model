@@ -11,7 +11,7 @@ install.packages('zoo')
 }
 
 # Location and time selection ---------------------------------------------
-# Define coordinates for O'Hare International Airport, Chicago (Longitude, Latitude)
+# Define coordinates. E.g., O'Hare International Airport, Chicago (Longitude, Latitude)
 lonlat <- c(-87.904722, 41.978611)
 
 # Define the start and end date
@@ -22,7 +22,7 @@ end_date <- "2020-12-31"
 # Fetch the data for all parameters in one call
 test_data <- get_power(
   community = "AG",  # Agriculture data
-  pars = c("T2M", "T2MDEW", "PS", "WD10M", "WS10M"),  # Add all required parameters
+  pars = c("T2M", "T2MDEW", "PS", "WD10M", "WS10M"),
   temporal_api = "hourly",  # Hourly data
   lonlat = lonlat,  # Coordinates for Iowa City
   dates = c(start_date, end_date),  # Date range
@@ -41,11 +41,11 @@ date <- as.POSIXct(paste(test_data$YEAR, sprintf("%02d", test_data$MO),
 # Create a data frame with the necessary columns
 Met_Data <- data.frame(
   date = date,
-  T2M = test_data$T2M,         # Temperature (Celsius)
-  T2MDEW = test_data$T2MDEW,   # Dew point (Celsius)
-  PS = 1000 * test_data$PS,           # Pressure (Pascals)
-  WD10M = test_data$WD10M,     # Wind direction (degrees)
-  WS10M = test_data$WS10M      # Wind speed (m/s)
+  T2M = test_data$T2M,        # Temperature (Celsius)
+  T2MDEW = test_data$T2MDEW,  # Dew point (Celsius)
+  PS = 1000 * test_data$PS,   # Pressure (Pascals)
+  WD10M = test_data$WD10M,    # Wind direction (degrees)
+  WS10M = test_data$WS10M     # Wind speed (m/s)
 )
 
 # Function to calculate water vapor (QV)
@@ -58,10 +58,12 @@ calculate_water_vapor <- function(TD, TA, Pr) {
 }
 
 # Calculate QV for each row and add to Met_Data
-Met_Data$QV <- mapply(calculate_water_vapor, Met_Data$T2MDEW, Met_Data$T2M, Met_Data$PS)
+Met_Data$QV <- mapply(calculate_water_vapor, Met_Data$T2MDEW,
+                      Met_Data$T2M, Met_Data$PS)
 
 # Replace missing values with NA
-missing_values <- list(T2M = -999.9, T2MDEW = -999.9, WS10M = -999.9, PS = -99990, WD10M = -9999)
+missing_values <- list(T2M = -999.9, T2MDEW = -999.9, WS10M = -999.9,
+                       PS = -99990, WD10M = -9999)
 Met_Data <- Met_Data %>%
   mutate(
     T2M = replace(T2M, T2M == missing_values$T2M, NA),
@@ -96,8 +98,8 @@ filled_data <- filled_data %>%
 # Check the structure to confirm
 str(filled_data)
 
-# Create output directory
-output_dir <- file.path("Output/Data/MERRA", "OHareAirport") # Need to adjust name
+# Create output directory t sotrage data
+output_dir <- file.path("Output/Data/MERRA", "OHareAirport") # Need to adjust name, e.g., O'Hare Airport
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
