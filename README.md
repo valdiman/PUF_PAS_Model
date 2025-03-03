@@ -54,13 +54,13 @@ It is recommended to create a project in R (e.g., PUF-PAS.Rproj). Download the p
 The structure of this project includes an R subfolder where all the R codes are located. There is a Data subfolder where the physico-chemical properties of the individual PCB congeners are stored, and then an Output subfolder, where the results are located.
 The R subfolder is also subdivided into Meteorology and PufPasEffectiveVolume subfolders.
 
-The meteorological data are generated here:
+The meteorological data are generated in these 2 codes:
 
 process_isd_met_dataV01.R
 
 process_MERRA_dataV01.R
 
-These generated data are used in the two scripts to generate the efective volumes:
+These generated data are used in the two scripts to generate the effective volumes:
 
 PUF_PAS_Effective_Volume_ModelMERRA.R
 
