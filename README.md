@@ -70,6 +70,8 @@ The meteorological output files will contain date, TA (atmospheric temperature i
 
 The PUF_PAS_Effective_Volume_Mode scripts will contain the PUF_ID (in this case it will be just one), the deployment times, the length in days, % of WS > 5 m/s, type (Veff and SR) and Veff and SR for all 209 PCB congeners.
 
+The current process_MERRA_dataV01.R scritp is set for O'Hare International Airport, Chicago, as an example, with start_date = "2018-01-01" and end_date = "2020-12-31". The current process_isd_met_dataV01.R scritp is set for O'Hare International Airport, Chicago as an example, with start_date = "2018" and end_date = "2020" (3 years).
 
+The current PUF_PAS_Effective_Volume_ModelMERRA.R and PUF_PAS_Effective_Volume_ModelVFinal.R scripts are set for O'Hare International Airport, Chicago, as an example, with start_date = "2018-12-01 01:00:00" and end_date = "2019-01-10 01:00:00", corresponding to the deployment time of the PUF-PAS.
 
 
