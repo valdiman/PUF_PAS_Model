@@ -50,25 +50,23 @@ This section of the ReadMe file provides short instructions on how to download a
 --------
 R FILES AND STRUCTURE
 --------
-It is recommended to create a project in R (e.g., PUF-PAS.Rproj). Download the project file (.Rproj) and the R subfolders where the codes are located, and the Subfolder.R code. Run first the Subfolder.R code, which will generate all the subfolders. 
-The structure of this project includes an R subfolder where all the R codes are located. There is a Data subfolder where the physico-chemical properties of the individual PCB congeners are stored, and then an Output subfolder, where the results are located.
+It is recommended to create a project in R (e.g., PUF-PAS.Rproj). Download the project file (.Rproj) and the R subfolders where the scripts are located, and the Subfolder.R file. Run first the Subfolder.R file, which will generate all the subfolders. 
+The structure of this project includes an R subfolder where all the R scripts are located. There is a Data subfolder where the physico-chemical properties of the individual PCB congeners are stored, and then an Output subfolder, where the results are located.
 The R subfolder is also subdivided into Meteorology and PufPasEffectiveVolume subfolders.
 
-The meteorological data are generated in these 2 codes:
+The meteorological data are generated in these 2 scripts:
 
 process_isd_met_dataV01.R
 
 process_MERRA_dataV01.R
 
-These generated data are used in the two scripts to generate the effective volumes:
+These scritps generate data are used in the two scripts to generate the effective volumes:
 
 PUF_PAS_Effective_Volume_ModelMERRA.R
 
 PUF_PAS_Effective_Volume_ModelVFinal.R
 
-There is no need to link the data in these scripts, it is already incorporated it. After running any of the meteorological scripts, new forders will be created
-in the Output/Data folder, i.e., isd_light and MERRA. Similarly, after running any of the PUF_PAS scripts, a new folder will be created in the Output/Data/Results,
-isd_light and MERRA too.
+Small adjustements need to be performed in these 2 scripts: (1) select folder to read the meteorological data, (2) include the deployemnts dates for each PUF-PAS,  (3) create a folder to storage the results. After running any of the meteorological scripts, a new forders will be created in the Output/Data folder, i.e., isd_light and MERRA. Similarly, after running any of the PUF_PAS scripts, a new folder will be created in the Output/Data/Results, isd_light and MERRA too.
 
 
 
