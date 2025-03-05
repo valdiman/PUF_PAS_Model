@@ -1,4 +1,4 @@
-# Uses MERRA data generated from;
+## Uses MERRA data generated from;
 # R/Meteorology/process_MERRA_dataV01.R
 # Need to select the dates of the PUF-PAS sampling
 
