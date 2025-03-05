@@ -1,6 +1,3 @@
-# Ignore everything by default
-*
-
 # Allow only R scripts and related files
 !*.R
 !*.r
