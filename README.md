@@ -74,6 +74,9 @@ The current process_MERRA_dataV01.R scritp is set for O'Hare International Airpo
 
 The current PUF_PAS_Effective_Volume_ModelMERRA.R and PUF_PAS_Effective_Volume_ModelVFinal.R scripts are set for O'Hare International Airport, Chicago, as an example, with start_date = "2018-12-01 01:00:00" and end_date = "2019-01-10 01:00:00", corresponding to the deployment time of the PUF-PAS.
 
-Step-by-Step User Guide
-New to the PUF-PAS model? See the Step-by-Step User Guide for instructions on downloading, setting up, and running the model in RStudio.
+---
+
+## Step-by-Step User Guide
+
+New to the PUF-PAS model? See the [Step-by-Step User Guide](PUF-PAS_Model_Step-by-Step_Guide_R_V01.pdf) for detailed instructions on downloading, setting up, and running the model in RStudio.
 
