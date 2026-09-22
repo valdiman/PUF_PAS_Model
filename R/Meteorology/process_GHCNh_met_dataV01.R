@@ -1,34 +1,90 @@
-# Install packages --------------------------------------------------------
+#
+# Install packages
 {
   install.packages("worldmet")
   install.packages("dplyr")
   install.packages("tidyr")
-  install.packages("purrr")
+  install.packages("zoo")
 }
 
-# Load libraries ----------------------------------------------------------
+# Load libraries
 {
   library(worldmet)
   library(dplyr)
   library(tidyr)
-  library(purrr)
+  library(zoo)
 }
 
-# Select station, years ---------------------------------------------------
+# Select station and period
+#
 # NOAA GHCNh:
 # https://www.ncei.noaa.gov/access/search/datasets/global-historical-climatology-network-hourly/
 #
-# GHCNh station ID for Chicago Midway:
+# Chicago Midway:
 # USW00014819
+
 metdataID <- "USW00014819"
 
-# First and last year to download
+# Choose the period mode:
+# period_year
+# "full_year" = use complete calendar years
+# "end_date"  = stop at a specific year/month/day
+
+period_mode <- "end_date"
+
+# First year to process
 start_year <- 2026
+
+# Last year to process
 end_year <- 2026
+
+# Used only when period_mode = "end_date"
+end_month <- 9
+end_day <- 19
 
 years <- start_year:end_year
 
-# Create output directory -----------------------------------------------
+# Current calendar year
+current_year <- as.integer(
+  format(Sys.Date(), "%Y")
+)
+
+# Requested end date
+if (period_mode == "end_date") {
+  
+  requested_end_date <- as.POSIXct(
+    sprintf(
+      "%04d-%02d-%02d 23:00:00",
+      end_year,
+      end_month,
+      end_day
+    ),
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
+  )
+  
+} else if (period_mode == "full_year") {
+  
+  requested_end_date <- as.POSIXct(
+    sprintf(
+      "%04d-12-31 23:00:00",
+      end_year
+    ),
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
+  )
+  
+} else {
+  
+  stop("period_mode must be either 'full_year' or 'end_date'.")
+}
+
+cat("\nRequested period mode:", period_mode, "\n")
+
+cat("Requested end date:", format(requested_end_date, "%Y-%m-%d %H:%M:%S",
+                                  tz = "UTC"), "UTC\n")
+
+# Create output directory
 output_dir <- file.path("Output/Data/GHCNh", metdataID)
 
 if (!dir.exists(output_dir)) {
@@ -38,21 +94,18 @@ if (!dir.exists(output_dir)) {
   )
 }
 
-# Current calendar year --------------------------------------------------
-current_year <- as.integer(
-  format(Sys.Date(), "%Y")
-)
-
-# Initialize list --------------------------------------------------------
+# Initialize list
 data_list <- list()
 
-# Download and process GHCNh data ---------------------------------------
+# Download and process GHCNh data
 for (iYear in years) {
   
-  cat("\nDownloading GHCNh:", metdataID, iYear, "\n")
+  cat("\n")
+  cat("Downloading GHCNh data\n")
+  cat("Station:", metdataID, "\n")
+  cat("Year:", iYear, "\n")
   
   # Skip future years
-  
   if (iYear > current_year) {
     
     cat(
@@ -66,7 +119,6 @@ for (iYear in years) {
   }
   
   # Download GHCNh hourly data
-  
   InputData <- tryCatch(
     
     worldmet::import_ghcn_hourly(
@@ -80,76 +132,98 @@ for (iYear in years) {
     
     error = function(e) {
       
-      cat("Could not download/process year ", iYear, ":\n", e$message,
-          "\n", sep = "")
+      cat(
+        "\nERROR downloading/processing year ",
+        iYear,
+        ":\n",
+        e$message,
+        "\n",
+        sep = ""
+      )
       
       return(NULL)
     }
   )
   
   # Skip year if download failed
-  
   if (is.null(InputData)) {
+    
+    cat(
+      "Skipping year ",
+      iYear,
+      ".\n",
+      sep = ""
+    )
+    
     next
   }
   
   # Check whether data were returned
-  
   if (nrow(InputData) == 0) {
     
-    cat("No data returned for year ", iYear, ".\n", sep = "")
+    cat(
+      "No observations returned for year ",
+      iYear,
+      ".\n",
+      sep = ""
+    )
     
     next
   }
   
-  # Display variable names the first time
-  
+  # Show variables returned by GHCNh
   if (iYear == years[1]) {
     
     cat("\n")
     cat("Variables returned by GHCNh:\n")
-    print(names(InputData))
+    print(
+      names(InputData)
+    )
     cat("\n")
   }
   
-  # Select and rename variables
+  # Select variables and rename them
   #
-  # GHCNh:
-  #
-  # air_temp  = air temperature (degrees C)
-  # dew_point = dew point temperature (degrees C)
-  # sea_pres  = sea-level pressure (hPa)
-  # ws        = wind speed (m/s)
-  # wd        = wind direction (degrees)
-  #
-  # We use sea-level pressure because this corresponds most
-  # closely to the pressure variable used in your old ISD-Lite
-  # workflow.
+  # date       = UTC date/time
+  # air_temp   = air temperature, degrees C
+  # dew_point  = dew-point temperature, degrees C
+  # sea_pres   = sea-level pressure, hPa
+  # ws         = wind speed, m/s
+  # wd         = wind direction, degrees
   
   Met_Data <- InputData %>%
     transmute(
-      date = as.POSIXct(date, tz = "UTC"),
       
-      # Temperature in degrees Celsius
-      TA = as.numeric(air_temp),
+      date = as.POSIXct(
+        date,
+        tz = "UTC"
+      ),
       
-      # Dew point in degrees Celsius
-      TD = as.numeric(dew_point),
+      TA = as.numeric(
+        air_temp
+      ),
       
-      # Sea-level pressure in hPa
-      Pr_hPa = as.numeric(sea_pres),
+      TD = as.numeric(
+        dew_point
+      ),
       
-      # Wind speed in m/s
-      WS = as.numeric(ws),
+      Pr_hPa = as.numeric(
+        sea_pres
+      ),
       
-      # Wind direction in degrees
-      WD = as.numeric(wd)
+      WS = as.numeric(
+        ws
+      ),
+      
+      WD = as.numeric(
+        wd
+      )
     )
   
   # Convert non-finite values to NA
-
   Met_Data <- Met_Data %>%
     mutate(
+      
       TA = ifelse(
         is.finite(TA),
         TA,
@@ -181,66 +255,102 @@ for (iYear in years) {
       )
     )
   
-  # Store data
-  
+  # Store year
   data_list[[as.character(iYear)]] <- Met_Data
   
-  
-  cat("Observations imported:", nrow(Met_Data), "\n")
-}
-
-# Check that at least one year was successfully downloaded
-
-if (length(data_list) == 0) {
-  
-  stop(
-    "No GHCNh data were successfully downloaded. ",
-    "Check the station ID, requested years, and internet connection."
+  cat(
+    "Observations imported:",
+    nrow(Met_Data),
+    "\n"
   )
 }
 
-# Combine all years ------------------------------------------------------
-combined_data <- bind_rows(data_list) %>%
+# Check that data were downloaded
+if (length(data_list) == 0) {
+  
+  stop(
+    "ERROR: No GHCNh data were downloaded."
+  )
+  
+} else {
+  
+  cat("\n")
+  cat("GHCNh DOWNLOAD COMPLETE\n")
+  cat("Station:", metdataID, "\n")
+  cat("Years:", paste(years, collapse = ", "), "\n")
+  cat("Years successfully imported:", length(data_list), "\n")
+}
+
+# Combine all years
+combined_data <- bind_rows(
+  data_list
+) %>%
   arrange(date)
 
-# Remove duplicate timestamps --------------------------------------------
+# Remove duplicate timestamps
 combined_data <- combined_data %>%
   distinct(date, .keep_all = TRUE)
 
-# Define date range ------------------------------------------------------
-start_date <- min(
-  combined_data$date,
-  na.rm = TRUE)
+# Define the actual start date
+start_date <- min(combined_data$date, na.rm = TRUE)
 
-end_date <- max(
-  combined_data$date,
-  na.rm = TRUE)
+# Determine the actual end date
+#
+# In full_year mode:
+#   use the requested end of the selected year.
+#
+# In end_date mode:
+#   first limit to the requested date,
+#   then find the last timestamp with an actual observation.
+#
+if (period_mode == "full_year") {
+  
+  actual_end_date <- requested_end_date
+  
+} else {
+  
+  requested_data <- combined_data %>%
+    filter(
+      date <= requested_end_date
+    )
+  
+  reported_data <- requested_data %>%
+    filter(
+      !is.na(TA) |
+        !is.na(TD) |
+        !is.na(Pr_hPa) |
+        !is.na(WS) |
+        !is.na(WD)
+    )
+  
+  if (nrow(reported_data) == 0) {
+    
+    stop(
+      "No actual GHCNh observations exist within the requested period."
+    )
+  }
+  
+  actual_end_date <- max(
+    reported_data$date,
+    na.rm = TRUE
+  )
+}
 
-# Display available data range -------------------------------------------
+# Keep only the requested period
+combined_data <- combined_data %>%
+  filter(date <= actual_end_date)
 
+# Display actual data range
 cat("\n")
-cat("------------------------------------------------------------\n")
-cat("Available GHCNh data range\n")
-cat("------------------------------------------------------------\n")
+cat("DATA RANGE\n")
 
 cat("Start:", format(start_date, "%Y-%m-%d %H:%M", tz = "UTC"),
     "UTC\n")
+cat("End:", format(actual_end_date, "%Y-%m-%d %H:%M", tz = "UTC"),
+    "UTC\n")
 
-cat("End:  ", format(end_date, "%Y-%m-%d %H:%M", tz = "UTC"), "UTC\n")
-
-# Generate complete hourly sequence -------------------------------------
-#
-# IMPORTANT:
-#
-# This does NOT create future data.
-#
-# If NOAA currently has data through September 21, the sequence
-# stops at September 21.
-#
-# Missing observations between the first and last available
-# observations become NA after the left_join.
-
-all_hours <- seq(from = start_date, to = end_date, by = "hour")
+# Generate complete hourly sequence
+all_hours <- seq(from = start_date, to = actual_end_date, by = "hour")
 
 merged_data <- data.frame(
   date = all_hours
@@ -251,9 +361,10 @@ merged_data <- data.frame(
   ) %>%
   arrange(date)
 
-# Make sure missing values are NA ---------------------------------------
+# Make sure missing values are represented by NA
 merged_data <- merged_data %>%
   mutate(
+    
     TA = ifelse(
       is.finite(TA),
       TA,
@@ -285,17 +396,12 @@ merged_data <- merged_data %>%
     )
   )
 
-# Calculate QV -----------------------------------------------------------
-# QV is calculated only where TA, TD, and pressure are available.
-# Pressure here is in hPa.
-
+# Calculate QV
 calculate_water_vapor <- function(
     TD,
     TA,
     Pr_hPa
 ) {
-  
-  # Return NA if any required variable is missing
   
   if (
     is.na(TD) ||
@@ -305,8 +411,6 @@ calculate_water_vapor <- function(
     
     return(NA_real_)
   }
-  
-  # Relative humidity
   
   RH <- 100 *
     (
@@ -320,37 +424,37 @@ calculate_water_vapor <- function(
         )
     )
   
-  # Saturation vapor pressure
-  
   rho_sat <- 6.112 *
     10^(
       17.67 * TA /
         (TA + 243.5)
     )
   
-  # Saturation mixing ratio
-  
   w_sat <- 0.6219907 *
     rho_sat /
-    (rho_sat + Pr_hPa)
-  
-  # Water vapor quantity
+    (
+      rho_sat +
+        Pr_hPa
+    )
   
   Water_Vapor <- w_sat * RH
   
-  return(Water_Vapor)
+  return(
+    Water_Vapor
+  )
 }
 
 merged_data$QV <- mapply(
   calculate_water_vapor,
   merged_data$TD,
   merged_data$TA,
-  merged_data$Pr_hPa
+  merged_data$Pr_hPa,
+  SIMPLIFY = TRUE
 )
 
-# Data quality summary ---------------------------------------------------
-
-print_data_quality_summary <- function(data) {
+# Data quality summary before filling
+print_data_quality_summary <- function(
+    data) {
   
   total_hours <- nrow(data)
   
@@ -382,99 +486,112 @@ print_data_quality_summary <- function(data) {
   )
   
   cat("\n")
-  cat("------------------------------------------------------------\n")
-  cat("Data Quality Summary\n")
-  cat("------------------------------------------------------------\n")
+  cat("DATA QUALITY SUMMARY - BEFORE FILLING\n")
   
-  cat(sprintf("Total Hours = %d\n", total_hours))
+  cat(
+    sprintf(
+      "Total Hours = %d\n",
+      total_hours
+    )
+  )
   
   for (param in names(missing_summary)) {
     
-    cat(sprintf("Missing Hours for %s = %d (%0.2f%%)\n", param,
-                missing_summary[param],
-                100 * missing_summary[param] / total_hours))
+    cat(
+      sprintf(
+        "Missing Hours for %s = %d (%0.2f%%)\n",
+        param,
+        missing_summary[param],
+        100 *
+          missing_summary[param] /
+          total_hours
+      )
+    )
   }
 }
 
 print_data_quality_summary(merged_data)
 
-# NO FORWARD-FILL / BACKWARD-FILL ---------------------------------------
-# Missing observations remain NA.
-# We intentionally DO NOT use:
-# na.locf()
-# na.fill()
+# Fill missing observations
 #
-# Therefore:
+# This fills gaps only within the selected data range.
 #
-# 18:00   3.2
-# 19:00   3.5
-# 20:00    NA
-# 21:00    NA
-# 22:00    NA
+# In end_date mode, the data range already stops at the last actual
+# GHCNh observation, so future/unreported dates are never filled.
 
-final_data <- merged_data %>%
-  arrange(date)
+filled_data <- merged_data %>%
+  arrange(date) %>%
+  mutate(across(c(TA, TD, WS, Pr_hPa, WD, QV), ~ na.locf(., na.rm = FALSE))
+  ) %>%
+  mutate(across(c(TA, TD, WS, Pr_hPa, WD, QV), ~ na.fill(., "extend")))
 
-# Convert pressure from hPa to Pa ----------------------------------------
-# Final output retains pressure in Pa to be consistent with
-# your previous dataset.
-# 1 hPa = 100 Pa
+# Data quality summary after filling
+cat("\n")
+cat("DATA QUALITY SUMMARY - AFTER FILLING\n")
 
-final_data <- final_data %>%
+cat("Remaining missing TA:     ", sum(is.na(filled_data$TA)), "\n",
+    sep = "")
+
+cat("Remaining missing TD:     ", sum(is.na(filled_data$TD)), "\n",
+    sep = "")
+
+cat("Remaining missing Pr_hPa: ", sum(is.na(filled_data$Pr_hPa)), "\n",
+    sep = "")
+
+cat("Remaining missing WS:     ",sum(is.na(filled_data$WS)), "\n",
+    sep = "")
+
+cat("Remaining missing WD:     ", sum(is.na(filled_data$WD)), "\n",
+    sep = "")
+
+cat("Remaining missing QV:     ", sum(is.na(filled_data$QV)), "\n",
+    sep = "")
+
+# Convert pressure from hPa to Pa
+filled_data <- filled_data %>%
   mutate(
     Pr = Pr_hPa * 100
   )
 
-# Convert TA from Celsius to Kelvin --------------------------------------
-final_data <- final_data %>%
-  mutate(
-    TA = TA + 273.15
-  )
+# Convert TA from Celsius to Kelvin
+filled_data <- filled_data %>%
+  mutate(TA = TA + 273.15)
 
-# Remove TD and temporary pressure column -------------------------------
-final_data <- final_data %>%
-  select(
-    date,
-    TA,
-    Pr,
-    WS,
-    WD,
-    QV
-  )
+# Remove TD and temporary pressure column
+filled_data <- filled_data %>%
+  select(date, TA, Pr, WS, WD, QV)
 
-# Display final data -----------------------------------------------------
-print(head(final_data))
+# Display final data range
+cat("\n")
+cat("FINAL DATASET\n")
 
-cat("\nLast observations:\n")
+cat("First record:", format(min(filled_data$date), "%Y-%m-%d %H:%M",
+                            tz = "UTC"), "UTC\n")
 
-print(tail(final_data))
+cat("Last record:", format(max(filled_data$date), "%Y-%m-%d %H:%M",
+                           tz = "UTC"), "UTC\n")
 
-# Save -------------------------------------------------------------------
-# The filename uses start_year and end_year.
-# Example:
-# USW00014819-2026-2026-GHCNh.csv
-#
-# or:
-#
-# USW00014819-2026-2027-GHCNh.csv
+cat("Number of records:", nrow(filled_data), "\n")
 
+cat("\nLast records:\n")
+
+print(tail(filled_data))
+
+# Save final data
 output_file_path <- file.path(output_dir,
                               paste0(metdataID, "-", start_year, "-",
-                                     end_year, "-GHCNh.csv"))
+                                     end_year, "-GHCNh-filled.csv"))
 
 tryCatch({
   
-  write.csv(final_data, file = output_file_path, row.names = FALSE)
+  write.csv(filled_data, file = output_file_path, row.names = FALSE)
   
   cat("\n")
-  cat("------------------------------------------------------------\n")
-  cat("Final data saved successfully\n")
-  cat("------------------------------------------------------------\n")
-  
+  cat("FINAL DATA SAVED SUCCESSFULLY\n")
   cat(output_file_path, "\n")
   
 }, error = function(e) {
   
-  cat("\nError saving the file:\n", e$message, "\n")
-  
+  cat("\nERROR SAVING FILE:\n", e$message, "\n")
 })
+
