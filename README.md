@@ -1,82 +1,82 @@
 # PUF_PAS_Model
+
+## Version
+
+**Version 2.0 — September 2026**
+
 ## License
 
-PUF_PAS_Model is licensed under the 2-Clause BSD License - see the [LICENSE](LICENSE) file for details.
-
-----------------------
-General Information
-----------------------
-
-Deposit Title: PCB PUF-PAS effective volume model
-
-Contributor information:
-
-Andres Martinez, PhD
-University of Iowa - Department of Civil & Environmental Engineering
-Iowa Superfund Research Program (ISRP)
-andres-martinez@uiowa.edu
-ORCID: 0000-0002-0572-1494
-
-This README file was generated on March 10, 2025 by Andres Martinez.
-
-This work was supported by the National Institutes of Environmental Health Sciences (NIEHS) grant #P42ES013661.
-
-This README file describes the project in R to calculate individual PCB sampling rates and effective volumes for a PUF-PAS sampler, in addition to obtain the meteorological data from two sources: MERRA and NOAA.
-
---------
-PREREQUISITES & DEPENDENCIES
---------
-
-This section of the ReadMe file lists the necessary software required to run codes in "R".
-
-Software:
-- Any web browser (e.g., Google Chrome, Microsoft Edge, Mozilla Firefox, etc.)
-- R-studio for easily viewing, editing, and executing "R" code as a regular "R script" file:
-https://www.rstudio.com/products/rstudio/download/
-
---------
-SOFTWARE INSTALLATION
---------
-
-This section of the ReadMe file provides short instructions on how to download and install "R Studio".  "R Studio" is an open source (no product license required) integrated development environment (IDE) for "R" and completely free to use.  To install "R Studio" follow the instructions below:
-
-1. Visit the following web address: https://www.rstudio.com/products/rstudio/download/
-2. Click the "download" button beneath RStudio Desktop
-3. Click the button beneath "Download RStudio Desktop".  This will download the correct installation file based on the operating system detected.
-4. Run the installation file and follow on-screen instructions. 
-
---------
-R FILES AND STRUCTURE
---------
-It is recommended to create a project in R (e.g., PUF-PAS.Rproj). Download the project file (.Rproj) and the R subfolder where the scripts are located, and the Subfolders.R file. Run first the Subfolder.R file, which will generate all the subfolders for this project.
-The structure of this project includes an R subfolder where all the R scripts are located, as previously indicated. There is a Data subfolder where the physico-chemical properties of the individual PCB congeners are stored, and then an Output subfolder, where the results from the meteorological and PUF-PAS efective volumnes are going to be storaged.
-The R subfolder is also subdivided into Meteorology and PufPasEffectiveVolume subfolders.
-
-The meteorological data are generated in these 2 scripts:
-
-process_isd_met_dataV01.R
-
-process_MERRA_dataV01.R
-
-These scritps generate data that are used in the two scripts to generate the effective volumes:
-
-PUF_PAS_Effective_Volume_ModelMERRA.R
-
-PUF_PAS_Effective_Volume_ModelVFinal.R
-
-Small adjustements need to be performed in these 2 scripts: (1) select folder to read the meteorological data, (2) include the deployments dates for the PUF-PAS,  (3) create a folder to storage the results. After running any of the meteorological scripts, a new forders will be created in the Output/Data folder, i.e., isd_light and MERRA. Similarly, after running any of the PUF_PAS scripts, a new folder will be created in the Output/Data/Results, isd_light and MERRA too.
-
-The meteorological output files will contain date, TA (atmospheric temperature in C), Pr (atmospheric pressure in Pa), WS (wind speed in m/s), WD (wind direction in degrees) and QV (kg/kg). 
-
-The PUF_PAS_Effective_Volume_Mode scripts will contain the PUF_ID (in this case it will be just one), the deployment times, the length in days, % of WS > 5 m/s, type (Veff and SR) and Veff and SR for all 209 PCB congeners.
-
-The current process_MERRA_dataV01.R scritp is set for O'Hare International Airport, Chicago, as an example, with start_date = "2018-01-01" and end_date = "2020-12-31". The current process_isd_met_dataV01.R scritp is set for O'Hare International Airport, Chicago as an example, with start_date = "2018" and end_date = "2020" (3 years).
-
-The current PUF_PAS_Effective_Volume_ModelMERRA.R and PUF_PAS_Effective_Volume_ModelVFinal.R scripts are set for O'Hare International Airport, Chicago, as an example, with start_date = "2018-12-01 01:00:00" and end_date = "2019-01-10 01:00:00", corresponding to the deployment time of the PUF-PAS.
+PUF_PAS_Model is licensed under the 2-Clause BSD License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## Step-by-Step User Guide
+## General Information
 
-New to the PUF-PAS model? See the [Step-by-Step User Guide](PUF-PAS_Model_Step-by-Step_Guide_R_V01.pdf) for detailed instructions on downloading, setting up, and running the model in RStudio.
+**Deposit Title:** PCB PUF-PAS Effective Volume Model
 
+### Contributor Information
+
+Andres Martinez, PhD  
+University of Iowa  
+Department of Civil & Environmental Engineering  
+Iowa Superfund Research Program (ISRP)  
+andres-martinez@uiowa.edu  
+ORCID: 0000-0002-0572-1494
+
+Originally created: March 10, 2025  
+Current version: September 2026
+
+This work was supported by the National Institute of Environmental Health Sciences (NIEHS) grant P42ES013661.
+
+This R project calculates congener-specific sampling rates and effective sampling volumes for polyurethane foam passive air samplers (PUF-PAS) for all 209 PCB congeners.
+
+The project also includes scripts for obtaining and processing hourly meteorological data from NOAA and MERRA-2.
+
+---
+
+## Prerequisites and Dependencies
+
+The following software is required:
+
+- R
+- RStudio Desktop
+- A web browser (e.g., Google Chrome, Microsoft Edge, Mozilla Firefox)
+
+RStudio Desktop can be downloaded from:
+
+https://posit.co/download/rstudio-desktop/
+
+Required R packages are identified and installed by the individual meteorological processing scripts.
+
+---
+
+## R Project Structure
+
+The repository is organized as an R project. Open:
+
+`PUF_PAS_Model.Rproj`
+
+in RStudio to ensure that the project root is used as the working directory.
+
+The main project structure is:
+
+```text
+PUF_PAS_Model/
+│
+├── Data/
+│   └── PCB physicochemical-property input files
+│
+├── Documentation/
+│   └── Step-by-Step User Guide
+│
+├── Output/
+│   └── Meteorological data and model results
+│
+├── R/
+│   ├── Meteorology/
+│   └── PufPasEffectiveVolume/
+│
+├── LICENSE
+├── README.md
+├── Subfolders.R
+└── PUF_PAS_Model.Rproj
