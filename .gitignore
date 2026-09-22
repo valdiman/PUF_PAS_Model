@@ -4,7 +4,7 @@
 !*.Rmd
 !*.Rproj
 
-# Allow all directories (since they're required for structure)
+# Allow all directories
 !*/
 
 # RStudio-specific files
@@ -17,7 +17,7 @@
 # macOS-specific files
 .DS_Store
 
-# Ignore all other file types
+# Ignore data/output and other generated file types
 *.csv
 *.log
 *.tmp
@@ -29,4 +29,7 @@
 *.html
 *.xml
 *.json
-*.xlsx
+
+# Allow official project documentation
+!Documentation/*.pdf
+!Documentation/*.pptx
