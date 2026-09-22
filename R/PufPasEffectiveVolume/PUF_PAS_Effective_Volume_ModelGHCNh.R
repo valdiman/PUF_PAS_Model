@@ -283,7 +283,6 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
   )
 }
 
-
 # Run the Model -----------------------------------------------------------
 
 PUF_PAS_Effective_Volume_Calculations(
@@ -292,7 +291,7 @@ PUF_PAS_Effective_Volume_Calculations(
   
   end_date = "2026-04-10 01:00:00",
   
-  # GHCNh meteorological data
+  # GHCNh meteorological data (need to be changed accordingly)
   met_data_path =
     "Output/Data/GHCNh/USW00014819/USW00014819-2026-2026-GHCNh-filled.csv",
   
