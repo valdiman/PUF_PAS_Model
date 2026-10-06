@@ -20,23 +20,23 @@
 # NOAA GHCNh:
 # https://www.ncei.noaa.gov/access/search/datasets/global-historical-climatology-network-hourly/
 #
-# Chicago Midway:
-# USW00014819
+# O'Hare Airport:
+# USW00094846
 
-metdataID <- "USW00014819"
+metdataID <- "USW00094846"
 
 # Choose the period mode:
 # period_year
 # "full_year" = use complete calendar years
 # "end_date"  = stop at a specific year/month/day
 
-period_mode <- "end_date"
+period_mode <- "full_year"
 
 # First year to process
-start_year <- 2026
+start_year <- 2025
 
 # Last year to process
-end_year <- 2026
+end_year <- 2025
 
 # Used only when period_mode = "end_date"
 end_month <- 9

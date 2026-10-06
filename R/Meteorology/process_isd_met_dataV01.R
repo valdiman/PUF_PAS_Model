@@ -29,9 +29,9 @@ install.packages('R.utils')
 # This will bring the info on the left panel, i.e., name of the station, period of record and Station ID
 # station information. 
 # Station ID: XXXXXXXXXXX need to add "-" after the sixth digit.
-metdataID <- "725340-14819"  # Example ID 725300-94846 O'Hare Chicago
-start_year <- 2018          # Start year
-num_years <- 3               # Number of years to include (start_year + 1)
+metdataID <- "725300-94846"  # Example ID 725300-94846 O'Hare Chicago
+start_year <- 2025          # Start year
+num_years <- 1               # Number of years to include (start_year + 1)
 
 # Functions ---------------------------------------------------------------
 # Generate a sequence of years

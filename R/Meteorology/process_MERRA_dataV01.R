@@ -15,8 +15,8 @@ install.packages('zoo')
 lonlat <- c(-87.904722, 41.978611)
 
 # Define the start and end date
-start_date <- "2018-01-01"
-end_date <- "2020-12-31"
+start_date <- "2025-01-01"
+end_date <- "2025-12-31"
 
 # Download data from MERRA-2 ----------------------------------------------
 # Fetch the data for all parameters in one call
