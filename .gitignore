@@ -29,6 +29,7 @@
 *.html
 *.xml
 *.json
+*.gz
 
 # Allow official project documentation
 !Documentation/*.pdf

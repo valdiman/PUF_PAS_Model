@@ -30,7 +30,7 @@ install.packages('R.utils')
 # station information. 
 # Station ID: XXXXXXXXXXX need to add "-" after the sixth digit.
 metdataID <- "725300-94846"  # Example ID 725300-94846 O'Hare Chicago
-start_year <- 2025          # Start year
+start_year <- 2015          # Start year
 num_years <- 1               # Number of years to include (start_year + 1)
 
 # Functions ---------------------------------------------------------------
@@ -96,67 +96,134 @@ end_date <- max(combined_data$date, na.rm = TRUE)
 
 # Generate a complete sequence of hours and merge with the original data
 all_hours <- seq(from = start_date, to = end_date, by = "hour")
+
 merged_data <- data.frame(date = all_hours) %>%
   left_join(combined_data, by = "date")
 
 # Define missing value indicators
-missing_values <- list(TA = -999.9, TD = -999.9, WS = -999.9,
-                       Pr = -99990, WD = -9999)
+missing_values <- list(
+  TA = -999.9,
+  TD = -999.9,
+  WS = -999.9,
+  Pr = -99990,
+  WD = -9999
+)
 
-# Function to print data quality summary
-print_data_quality_summary <- function(data, missing_values,
-                                       prefix = "Before") {
-  total_hours <- nrow(data)
-  missing_summary <- sapply(names(missing_values), function(param) {
-    sum(data[[param]] == missing_values[[param]], na.rm = TRUE)
-  })
-  missing_QV <- sum(is.na(data$QV))
-  
-  cat(sprintf("---------Data Quality Summary (%s Filling)---------\n", prefix))
-  for (param in names(missing_values)) {
-    cat(sprintf("Total Missing Hours for %s = %d (%0.2f%%)\n",
-                param, missing_summary[param], (missing_summary[param] / total_hours) * 100))
-  }
-  cat(sprintf("Total Missing Hours for QV = %d (%0.2f%%)\n", missing_QV, (missing_QV / total_hours) * 100))
-}
-
-# Print Data Quality Summary before filling
-print_data_quality_summary(merged_data, missing_values, "Before")
+# Replace missing values with NA before calculating QV
+merged_data <- merged_data %>%
+  mutate(
+    TA = replace(TA, TA == missing_values$TA, NA_real_),
+    TD = replace(TD, TD == missing_values$TD, NA_real_),
+    WS = replace(WS, WS == missing_values$WS, NA_real_),
+    Pr = replace(Pr, Pr == missing_values$Pr, NA_real_),
+    WD = replace(WD, WD == missing_values$WD, NA_real_)
+  )
 
 # Calculate QV column
 calculate_water_vapor <- function(TD, TA, Pr) {
-  RH <- 100 * (exp((17.625 * TD) / (243.04 + TD)) / exp((17.625 * TA) / (243.04 + TA)))
-  rho_sat <- 6.112 * 10^(17.67 * TA / (TA + 243.5))
-  w_sat <- 0.6219907 * rho_sat / (rho_sat + Pr)
+  
+  # Return NA if any required variable is missing
+  if (is.na(TD) || is.na(TA) || is.na(Pr)) {
+    return(NA_real_)
+  }
+  
+  # Pressure is stored in Pa.
+  # Convert pressure to hPa for the QV calculation.
+  Pr_hPa <- Pr / 100
+  
+  # Calculate relative humidity
+  RH <- 100 *
+    (exp((17.625 * TD) / (243.04 + TD)) /
+       exp((17.625 * TA) / (243.04 + TA)))
+  
+  # Calculate saturation vapor pressure
+  rho_sat <- 6.112 *
+    10^(17.67 * TA / (TA + 243.5))
+  
+  # Calculate saturation mixing ratio
+  w_sat <- 0.6219907 *
+    rho_sat /
+    (rho_sat + Pr_hPa)
+  
+  # Calculate water vapor quantity
   Water_Vapor <- w_sat * RH
+  
   return(Water_Vapor)
 }
 
 # Apply the function to each row and create a new column 'QV'
-merged_data$QV <- mapply(calculate_water_vapor, merged_data$TD,
-                         merged_data$TA, merged_data$Pr, SIMPLIFY = TRUE)
+merged_data$QV <- mapply(
+  calculate_water_vapor,
+  merged_data$TD,
+  merged_data$TA,
+  merged_data$Pr,
+  SIMPLIFY = TRUE
+)
 
-# Replace missing values with NA in merged_data
-merged_data <- merged_data %>%
-  mutate(
-    TA = replace(TA, TA == missing_values$TA, NA),
-    TD = replace(TD, TD == missing_values$TD, NA),
-    WS = replace(WS, WS == missing_values$WS, NA),
-    Pr = replace(Pr, Pr == missing_values$Pr, NA),
-    WD = replace(WD, WD == missing_values$WD, NA)
+# Function to print data quality summary
+print_data_quality_summary <- function(data, prefix = "Before") {
+  
+  total_hours <- nrow(data)
+  
+  missing_summary <- c(
+    TA = sum(is.na(data$TA)),
+    TD = sum(is.na(data$TD)),
+    Pr = sum(is.na(data$Pr)),
+    WS = sum(is.na(data$WS)),
+    WD = sum(is.na(data$WD)),
+    QV = sum(is.na(data$QV))
   )
+  
+  cat(sprintf(
+    "---------Data Quality Summary (%s Filling)---------\n",
+    prefix
+  ))
+  
+  for (param in names(missing_summary)) {
+    
+    cat(sprintf(
+      "Total Missing Hours for %s = %d (%0.2f%%)\n",
+      param,
+      missing_summary[param],
+      (missing_summary[param] / total_hours) * 100
+    ))
+  }
+}
+
+# Print Data Quality Summary before filling
+print_data_quality_summary(
+  merged_data,
+  "Before"
+)
 
 # Forward-fill and backward-fill missing values
 filled_data <- merged_data %>%
   arrange(date) %>%
-  mutate(across(c(TA, TD, WS, Pr, WD, QV), ~ na.locf(., na.rm = FALSE))) %>%
-  mutate(across(c(TA, TD, WS, Pr, WD, QV), ~ na.fill(., "extend")))
+  mutate(
+    across(
+      c(TA, TD, WS, Pr, WD, QV),
+      ~ na.locf(., na.rm = FALSE)
+    )
+  ) %>%
+  mutate(
+    across(
+      c(TA, TD, WS, Pr, WD, QV),
+      ~ na.fill(., "extend")
+    )
+  )
+
+# Print Data Quality Summary after filling
+print_data_quality_summary(
+  filled_data,
+  "After"
+)
 
 # Convert TA from Celsius to Kelvin
 filled_data$TA <- filled_data$TA + 273.15
 
 # Remove the 'TD' column from the final data
-filled_data <- filled_data %>% select(-TD)
+filled_data <- filled_data %>%
+  select(-TD)
 
 # Save the final filled data without 'TD'
 output_file_path <- file.path(output_dir,
