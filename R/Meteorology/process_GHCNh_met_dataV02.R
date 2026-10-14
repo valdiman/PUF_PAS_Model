@@ -31,10 +31,7 @@ end_year <- 2025
 years <- start_year:end_year
 
 # Create output directory
-output_dir <- file.path(
-  "Output/Data/GHCNh_ISD_compatible",
-  metdataID
-)
+output_dir <- file.path("Output/Data/GHCNh", metdataID)
 
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
@@ -225,6 +222,46 @@ for (variable in c("TA", "TD", "Pr", "WS", "WD", "QV")) {
   ))
 }
 
+# Check consecutive missing meteorological observations
+# Function to calculate the longest consecutive NA period
+max_missing_run <- function(x) {
+  
+  missing_runs <- rle(is.na(x))
+  
+  if (!any(missing_runs$values)) {
+    return(0L)
+  }
+  
+  max(missing_runs$lengths[missing_runs$values])
+}
+
+# Maximum acceptable consecutive missing hours
+max_missing_hours <- 72
+
+cat("\nConsecutive Missing Data Summary\n")
+cat("-----------------------------------\n")
+
+for (variable in c("TA", "TD", "Pr", "WS", "WD")) {
+  
+  longest_gap <- max_missing_run(validation_data[[variable]])
+  
+  cat(sprintf(
+    "%s - Longest missing period: %d hours\n",
+    variable,
+    longest_gap
+  ))
+  
+  if (longest_gap > max_missing_hours) {
+    
+    warning(sprintf(
+      "%s contains more than %d consecutive missing hours.",
+      variable,
+      max_missing_hours
+    ))
+    
+  }
+}
+
 # Fill missing meteorological observations
 filled_data <- validation_data %>%
   arrange(date) %>%
@@ -272,7 +309,7 @@ filled_data <- filled_data %>%
   select(date, TA, Pr, WS, WD, QV)
 
 # Display first observations
-print(head(filled_data, 20))
+print(head(filled_data, 10))
 
 # Display last observations
 cat("\nLast observations:\n")

@@ -1,7 +1,11 @@
-## Uses GHCNh data generated from;
-# R/Meteorology/process_GHCNh_dataV01.R
-# Need to select the dates of the PUF-PAS sampling
-
+# Meteorological data source:
+# R/Meteorology/process_GHCNh_dataV02.R
+#
+# Uses processed GHCNh hourly meteorological data.
+# Missing values are filled and QV is calculated before
+# running the PUF-PAS effective-volume model.
+#
+# Specify the PUF-PAS deployment and collection dates below.
 
 # Calculations (functions) ------------------------------------------------
 PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data_path,
@@ -23,25 +27,96 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
   # Read in site-specific Met data
   Met_Data <- read.csv(met_data_path, header = TRUE)
   
+  # Convert meteorological timestamps to UTC
+  date_text <- trimws(as.character(Met_Data$date))
+  
+  # Add midnight to date-only observations
+  date_text <- ifelse(
+    grepl("^\\d{4}-\\d{2}-\\d{2}$", date_text),
+    paste0(date_text, " 00:00:00"),
+    date_text
+  )
+  
+  # Convert to POSIXct
+  Met_Data$date <- as.POSIXct(
+    date_text,
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
+  )
+  
+  # Check for invalid timestamps
+  if (any(is.na(Met_Data$date))) {
+    stop("Invalid meteorological timestamps detected.")
+  }
+  
   # Import PCB properties
   PCB_Properties <- read.csv(pcb_properties_path, header = TRUE)
   PCB_ppLFER <- read.csv(pcb_ppLFER_path, header = TRUE)
   
-  # Convert the 'date' column in Met_Data to POSIXct format
-  Met_Data$date <- as.POSIXct(Met_Data$date, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  # Convert deployment dates to UTC
+  deployment_start <- as.POSIXct(
+    start_date,
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
+  )
   
-  # Now, find the closest start and end times
-  StartTime <- which.min(abs(Met_Data$date - as.POSIXct(start_date, tz = "UTC")))
-  EndTime <- which.min(abs(Met_Data$date - as.POSIXct(end_date, tz = "UTC")))
+  deployment_end <- as.POSIXct(
+    end_date,
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
+  )
+  
+  # Find exact matching timestamps
+  StartTime <- match(
+    deployment_start,
+    Met_Data$date
+  )
+  
+  EndTime <- match(
+    deployment_end,
+    Met_Data$date
+  )
+  
+  # Verify timestamps
+  if (is.na(StartTime) || is.na(EndTime)) {
+    stop(
+      "Deployment or collection timestamp not found in meteorological data."
+    )
+  }
+  
+  # Verify continuous hourly meteorological observations
+  deployment_dates <- Met_Data$date[StartTime:EndTime]
+  
+  if (any(abs(as.numeric(diff(deployment_dates), units = "hours") - 1) > 1e-8)) {
+    stop("Meteorological timestamps are not continuous hourly observations.")
+  }
+  
+  if (StartTime >= EndTime) {
+    stop(
+      "Deployment start must be earlier than collection end."
+    )
+  }
   
   # Length of deployment (number of time steps)
   Length <- EndTime - (StartTime - 1)
   
   # Read in Met variables for the above time series
-  T <- Met_Data[StartTime:EndTime, 2]     # Temperature (Kelvin)
-  P <- Met_Data[StartTime:EndTime, 3]     # Pressure (Pascals)
-  WS <- Met_Data[StartTime:EndTime, 4]    # Wind Speed (m/s)
-  Qvap <- Met_Data[StartTime:EndTime, 6]  # Water-Vapor Mixing Ratio (kg/kg)
+  T <- Met_Data$TA[StartTime:EndTime]
+  P <- Met_Data$Pr[StartTime:EndTime]
+  WS <- Met_Data$WS[StartTime:EndTime]
+  Qvap <- Met_Data$QV[StartTime:EndTime]
+  
+  # Check missing meteorological values
+  if (
+    any(!is.finite(T)) ||
+    any(!is.finite(P)) ||
+    any(!is.finite(WS)) ||
+    any(!is.finite(Qvap))
+  ) {
+    stop(
+      "Missing or invalid meteorological values detected during deployment."
+    )
+  }
   
   # Prepare deployment-specific meteorological data for output
   DeploymentMetData <- Met_Data[StartTime:EndTime, ]
@@ -219,14 +294,17 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
     PAS_Final[2, C] <- RsAVG
   }
   
+  # Format deployment and collection dates for CSV output
   formatted_start_date <- format(
-    as.POSIXct(start_date),
-    "%Y%m%d%H"
+    deployment_start,
+    "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
   )
   
   formatted_end_date <- format(
-    as.POSIXct(end_date),
-    "%Y%m%d%H"
+    deployment_end,
+    "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
   )
   
   rowID <- matrix(
@@ -272,7 +350,8 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
   # Create the directory if it does not exist
   dir.create(
     dirname(file_path),
-    recursive = TRUE
+    recursive = TRUE,
+    showWarnings = FALSE
   )
   
   # Save the data frame to a CSV file
@@ -287,13 +366,13 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
 
 PUF_PAS_Effective_Volume_Calculations(
   
-  start_date = "2026-03-01 01:00:00",
+  start_date = "2025-03-01 01:00:00",
   
-  end_date = "2026-04-10 01:00:00",
+  end_date = "2025-04-10 01:00:00",
   
-  # GHCNh meteorological data (need to be changed accordingly)
+  # GHCNh meteorological data - Chicago O'Hare Airport
   met_data_path =
-    "Output/Data/GHCNh/USW00014819/USW00014819-2026-2026-GHCNh-filled.csv",
+    "Output/Data/GHCNh/USW00094846/USW00094846-2025-2025-GHCNh-filled.csv",
   
   # PCB properties
   pcb_properties_path =
@@ -305,5 +384,5 @@ PUF_PAS_Effective_Volume_Calculations(
   
   # Output
   file_path =
-    "Output/Data/Results/GHCNh/VefChicagoMidwayAirport2026.csv"
+    "Output/Data/Results/GHCNh/VefChicagoOHareAirport2025.csv"
 )

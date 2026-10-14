@@ -2,7 +2,7 @@
 
 ## Version
 
-**Version 2.0 — September 2026**
+**Version 2.1 — October 2026**
 
 ## License
 
@@ -23,7 +23,7 @@ andres-martinez@uiowa.edu
 ORCID: 0000-0002-0572-1494
 
 Originally created: March 10, 2025  
-Current version: September 2026
+Current version: 2.1 — October 2026
 
 This work was supported by the National Institute of Environmental Health Sciences (NIEHS) grant P42ES013661.
 
@@ -91,42 +91,96 @@ Meteorological data can be obtained from NOAA GHCNh or MERRA-2.
 
 ### NOAA GHCNh
 
-The primary NOAA workflow uses the Global Historical Climatology Network hourly (GHCNh) dataset.
+The primary NOAA meteorological workflow uses the Global Historical
+Climatology Network hourly (GHCNh) dataset.
 
-The GHCNh meteorological-processing script is located in:
+The GHCNh meteorological-processing script is located at:
 
-`R/Meteorology/`
+`R/Meteorology/process_GHCNh_dataV02.R`
 
-The script downloads and processes hourly meteorological observations for a selected NOAA GHCNh station.
+The script downloads and processes meteorological observations for
+a selected NOAA GHCNh station and specified years.
+
+#### Hourly Observation Processing
+
+GHCNh observations are processed using an hourly observation-selection
+procedure designed to maintain consistency with the historical NOAA
+ISD-Lite dataset.
+
+Rather than averaging all observations within each clock hour, the
+script selects representative observations near the hourly boundary
+and assigns them to the corresponding hourly timestamp.
+
+Comparisons with ISD-Lite observations demonstrated excellent agreement
+for temperature, atmospheric pressure, wind speed, wind direction,
+and calculated water-vapor mixing ratio over the evaluated period.
+
+The procedure approximates the ISD-Lite hourly observation-selection
+method but does not reproduce NOAA's complete quality-ranking algorithm.
+
+#### Station and Year Selection
 
 The user specifies:
 
 - GHCNh station ID
 - Start year
 - End year
-- Processing mode
 
-Two processing modes are available:
+For example, to process meteorological observations from Chicago
+O'Hare International Airport for 2025:
 
-### `full_year`
+```r
+# Chicago O'Hare International Airport
+metdataID <- "USW00094846"
+start_year <- 2025
+end_year <- 2025
+```
 
-Use this option for completed calendar years.
+The script processes the specified calendar years.
 
-### `end_date`
+For incomplete years, the processed meteorological dataset stops
+at the last available hourly observation rather than extending
+through December 31.
 
-Use this option when the final year is incomplete or when meteorological processing should stop at a specific date.
+#### Missing Meteorological Observations
 
-When using `end_date`, the user specifies:
+The script identifies missing meteorological observations and reports
+the number and percentage of missing hours for each variable.
 
-- End year
-- End month
-- End day
+It also identifies the longest consecutive missing-data period for
+each meteorological variable and generates a warning when the
+period exceeds 72 consecutive hours.
 
-The script fills missing meteorological observations within the selected data period but does not extend meteorological values beyond the last actual reported GHCNh observation.
+Missing observations within the available data period are replaced
+using forward-filling and backward-filling procedures.
+
+The water-vapor mixing ratio is recalculated using dew-point
+temperature and atmospheric pressure after missing values
+have been filled.
+
+The processed meteorological dataset is saved as a single CSV file
+for use in the PUF-PAS effective-volume model.
+
+#### Processed GHCNh Output
+
+Processed meteorological data are stored under:
+
+`Output/Data/GHCNh/<Station_ID>/`
+
+For example:
+
+`Output/Data/GHCNh/USW00094846/USW00094846-2025-2025-GHCNh-filled.csv`
+
+The output contains hourly meteorological observations with
+temperature in Kelvin, atmospheric pressure in Pascals,
+wind speed in m/s, wind direction in degrees, and water-vapor
+mixing ratio in kg/kg.
 
 NOAA GHCNh stations and data availability can be searched at:
 
 https://www.ncei.noaa.gov/access/search/datasets/global-historical-climatology-network-hourly/
+
+---
 
 ### MERRA-2
 
@@ -142,18 +196,34 @@ MERRA-2 can be used when a suitable nearby NOAA station is unavailable or when t
 
 ## Processed Meteorological Data
 
-The processed meteorological files contain the following variables:
+The PUF-PAS effective-volume model uses hourly meteorological data
+obtained from NOAA GHCNh, NOAA ISD-Lite, or MERRA-2.
 
-- `date` — date and time in UTC
-- `TA` — atmospheric temperature in Kelvin
-- `Pr` — atmospheric pressure in Pa
-- `WS` — wind speed in m/s
-- `WD` — wind direction in degrees
-- `QV` — water-vapor quantity used by the PUF-PAS model
+Processed meteorological files contain the following variables:
+
+| Variable | Description | Units |
+|---|---|---|
+| `date` | Date and time | UTC |
+| `TA` | Atmospheric temperature | K |
+| `Pr` | Atmospheric pressure | Pa |
+| `WS` | Wind speed | m/s |
+| `WD` | Wind direction | degrees |
+| `QV` | Water-vapor mixing ratio | kg/kg |
+
+The GHCNh processing workflow calculates QV from dew-point
+temperature and atmospheric pressure after missing meteorological
+observations have been filled.
+
+The processed meteorological files are formatted for use in the
+PUF-PAS effective-volume model.
 
 Processed NOAA GHCNh data are stored under:
 
 `Output/Data/GHCNh/`
+
+Processed NOAA ISD-Lite data are stored under:
+
+`Output/Data/isd_light/`
 
 Processed MERRA-2 data are stored under:
 
@@ -163,11 +233,38 @@ Processed MERRA-2 data are stored under:
 
 ## PUF-PAS Effective Volume Model
 
-The effective-volume scripts are located under:
+The PUF-PAS effective-volume calculation scripts are located under:
 
 `R/PufPasEffectiveVolume/`
 
-The effective-volume model uses the processed meteorological data together with the PUF-PAS deployment and collection times and PCB physicochemical-property data.
+The model calculates congener-specific sampling rates and effective
+sampling volumes using hourly meteorological observations, PUF sampler
+characteristics, and PCB physicochemical-property data.
+
+Calculations are performed for all 209 PCB congeners.
+
+### Scientific Model Formulation
+
+The R implementation follows the meteorology-dependent PUF-PAS model
+developed by Petrich et al. (2013) and Herkert et al. (2016).
+
+The model retains the original published equations for:
+
+- Internal air velocity within the PUF-PAS chamber
+- PCB molecular diffusivity
+- Kinematic viscosity
+- Air-side mass-transfer coefficient
+- Temperature- and wind-dependent empirical calibration parameter (gamma)
+- PUF-air partitioning
+- Effective sampling volume
+
+Version 2.1 improves meteorological data processing and input validation
+without modifying the original scientific model equations.
+
+The original viscosity and gamma formulations are retained to preserve
+consistency with the published empirical calibration.
+
+### Model Configuration
 
 For each model run, the user specifies:
 
@@ -177,36 +274,120 @@ For each model run, the user specifies:
 4. PCB physicochemical-property input files
 5. Output path and filename
 
-Deployment and collection times should be entered in UTC using:
+Deployment and collection times must be entered in UTC using:
 
 `YYYY-MM-DD HH:MM:SS`
 
 For example:
 
 ```r
-start_date = "2018-12-01 01:00:00"
-end_date   = "2019-01-10 01:00:00"
+start_date = "2025-03-01 01:00:00"
+end_date   = "2025-04-10 01:00:00"
 ```
+
+### Meteorological Input Validation
+
+The model verifies that the requested deployment and collection
+timestamps are present in the meteorological dataset.
+
+Meteorological variables are selected by column name rather than
+column position.
+
+The model checks for missing or invalid temperature, pressure,
+wind-speed, and water-vapor mixing-ratio values during the selected
+deployment period.
+
+The meteorological input files must contain continuous hourly
+observations covering the complete deployment period.
+
+The model uses the following meteorological variables:
+
+- `TA` — atmospheric temperature (K)
+- `Pr` — atmospheric pressure (Pa)
+- `WS` — wind speed (m/s)
+- `QV` — water-vapor mixing ratio (kg/kg)
+
+Wind direction (`WD`) is included in the processed meteorological
+datasets but is not directly used in the current effective-volume
+calculations.
+
+### Meteorological Data Sources
+
+The model can use processed meteorological data from:
+
+- NOAA GHCNh
+- NOAA ISD-Lite
+- MERRA-2
+
+The meteorological input file is selected using the `met_data_path`
+argument.
+
+For example:
+
+```r
+met_data_path =
+  "Output/Data/GHCNh/USW00094846/USW00094846-2025-2025-GHCNh-filled.csv"
+```
+
+All meteorological input files must use the required column names,
+units, and UTC timestamps.
+
+### Deployment Length
+
+The model calculates effective sampling volumes at hourly time steps.
+
+The current implementation includes both deployment and collection
+timestamps when selecting meteorological observations.
+
+Consequently, the number of hourly records is one greater than
+the elapsed deployment duration expressed in whole hours.
+
+This convention is retained for consistency with the original
+model implementation.
 
 ---
 
 ## Model Output
 
-The PUF-PAS model calculates:
+The PUF-PAS model calculates congener-specific sampling rates and
+effective sampling volumes for all 209 PCB congeners.
 
-- Congener-specific sampling rate (`SR`, m³/day)
-- Congener-specific effective sampling volume (`Veff`, m³)
-- Deployment and collection times
-- Deployment length
-- Percentage of wind-speed observations greater than 5 m/s
+The output CSV contains the following information:
 
-Calculations are performed for all 209 PCB congeners.
+| Column | Description | Units |
+|---|---|---|
+| `PUF_ID` | PUF-PAS sampler identifier | — |
+| `Deployment` | Deployment start date and time | UTC |
+| `Collection` | Collection end date and time | UTC |
+| `Length` | Number of hourly meteorological records | hours (records) |
+| `WS_Exceedence` | Percentage of wind-speed observations greater than 5 m/s | % |
+| `Type` | Calculated output variable (`Veff` or `SR`) | — |
+| PCB congeners (1–209) | Congener-specific calculated values | m³ or m³/day |
+
+For each deployment, the model generates two rows:
+
+- `Veff` — Congener-specific effective sampling volume (m³).
+- `SR` — Congener-specific average sampling rate (m³/day).
+
+Deployment and collection timestamps are saved using:
+
+`YYYY-MM-DD HH:MM:SS`
+
+The `Length` column represents the number of hourly records used in
+the calculations, including both deployment and collection timestamps.
+
+For example, a deployment lasting 40 days contains 961 hourly records
+(960 elapsed hours plus the collection timestamp).
 
 Model results are stored under:
 
 `Output/Data/Results/`
 
 with subfolders corresponding to the meteorological data source.
+
+For example, GHCNh results are stored under:
+
+`Output/Data/Results/GHCNh/`
 
 ---
 
@@ -235,6 +416,26 @@ Meteorological and model-output CSV files are generated by the R scripts and are
 The repository contains the R scripts, PCB physicochemical-property files, documentation, and other project files required to reproduce the model calculations.
 
 ---
+
+## Version History
+
+### Version 2.1 — October 2026
+
+- Updated NOAA GHCNh meteorological processing (V02).
+- Implemented representative hourly observation selection to improve consistency with historical ISD-Lite data.
+- Corrected the water-vapor mixing-ratio (QV) calculation.
+- Added missing-data percentages and warnings for gaps exceeding 72 consecutive hours.
+- Improved handling of incomplete meteorological years.
+- Implemented exact UTC deployment and collection timestamp matching.
+- Improved meteorological input validation.
+- Standardized deployment and collection date formatting in model outputs.
+- Retained the original published PUF-PAS viscosity, mass-transfer, and empirical gamma calibration equations.
+
+### Version 2.0 — September 2026
+
+- Updated the R project structure and documentation.
+- Introduced NOAA GHCNh and MERRA-2 meteorological-processing workflows.
+- Updated the PUF-PAS effective-volume model implementation.
 
 ## Citation
 
