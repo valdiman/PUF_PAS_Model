@@ -30,7 +30,7 @@ install.packages('R.utils')
 # station information. 
 # Station ID: XXXXXXXXXXX need to add "-" after the sixth digit.
 metdataID <- "725300-94846"  # Example ID 725300-94846 O'Hare Chicago
-start_year <- 2015          # Start year
+start_year <- 2025          # Start year
 num_years <- 1               # Number of years to include (start_year + 1)
 
 # Functions ---------------------------------------------------------------
@@ -58,7 +58,12 @@ for (i in seq_along(years)) {
   # Download and unzip the file
   download.file(file_url, destfile = file.path(output_dir, file_name),
                 mode = "wb")
-  R.utils::gunzip(file.path(output_dir, file_name), remove = TRUE)
+  
+  R.utils::gunzip(
+    file.path(output_dir, file_name),
+    remove = TRUE,
+    overwrite = TRUE
+  )
   
   # Read the data into R
   InputData <- read.table(file_path, header = FALSE)
@@ -119,36 +124,26 @@ merged_data <- merged_data %>%
     WD = replace(WD, WD == missing_values$WD, NA_real_)
   )
 
-# Calculate QV column
+# Calculate water-vapor mixing ratio (kg/kg)
 calculate_water_vapor <- function(TD, TA, Pr) {
   
-  # Return NA if any required variable is missing
-  if (is.na(TD) || is.na(TA) || is.na(Pr)) {
+  # Return NA if required variables are missing
+  if (is.na(TD) || is.na(Pr)) {
     return(NA_real_)
   }
   
-  # Pressure is stored in Pa.
-  # Convert pressure to hPa for the QV calculation.
+  # Convert pressure from Pa to hPa
   Pr_hPa <- Pr / 100
   
-  # Calculate relative humidity
-  RH <- 100 *
-    (exp((17.625 * TD) / (243.04 + TD)) /
-       exp((17.625 * TA) / (243.04 + TA)))
+  # Calculate vapor pressure from dew point (hPa)
+  e <- 6.112 * exp(
+    (17.67 * TD) / (TD + 243.5)
+  )
   
-  # Calculate saturation vapor pressure
-  rho_sat <- 6.112 *
-    10^(17.67 * TA / (TA + 243.5))
+  # Calculate water-vapor mixing ratio (kg/kg)
+  QV <- 0.62198 * e / (Pr_hPa - e)
   
-  # Calculate saturation mixing ratio
-  w_sat <- 0.6219907 *
-    rho_sat /
-    (rho_sat + Pr_hPa)
-  
-  # Calculate water vapor quantity
-  Water_Vapor <- w_sat * RH
-  
-  return(Water_Vapor)
+  return(QV)
 }
 
 # Apply the function to each row and create a new column 'QV'
